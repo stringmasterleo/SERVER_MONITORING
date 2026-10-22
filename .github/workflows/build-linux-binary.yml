@@ -49,21 +49,35 @@ jobs:
               PYVER=3.11.9
               PYHOME=/tmp/py311shared
               PYBIN=$PYHOME/bin/python3.11
+              OPENSSL_VER=1.1.1w
+              OPENSSL_HOME=/tmp/openssl111
 
               yum -y install \
-                gcc make wget tar xz bzip2-devel libffi-devel openssl-devel zlib-devel \
+                gcc make wget tar xz bzip2-devel libffi-devel zlib-devel perl-core \
                 readline-devel sqlite-devel gdbm-devel ncurses-devel
+
+              cd /tmp
+
+              # Build OpenSSL 1.1 for Python SSL support on CentOS 7 based images.
+              wget -q https://www.openssl.org/source/openssl-${OPENSSL_VER}.tar.gz
+              tar -xzf openssl-${OPENSSL_VER}.tar.gz
+              cd openssl-${OPENSSL_VER}
+              ./config --prefix=$OPENSSL_HOME --openssldir=$OPENSSL_HOME shared zlib
+              make -j2
+              make install_sw
 
               cd /tmp
               wget -q https://www.python.org/ftp/python/${PYVER}/Python-${PYVER}.tgz
               tar -xzf Python-${PYVER}.tgz
               cd Python-${PYVER}
-              ./configure --prefix=$PYHOME --enable-shared --with-ensurepip=install \
-                LDFLAGS="-Wl,-rpath,$PYHOME/lib"
+              ./configure --prefix=$PYHOME --enable-shared --with-ensurepip=install --with-openssl=$OPENSSL_HOME \
+                CPPFLAGS="-I$OPENSSL_HOME/include" \
+                LDFLAGS="-Wl,-rpath,$PYHOME/lib -Wl,-rpath,$OPENSSL_HOME/lib -L$OPENSSL_HOME/lib"
               make -j2
               make install
 
               "$PYBIN" -V
+              "$PYBIN" -c "import ssl; print(ssl.OPENSSL_VERSION)"
               "$PYBIN" -m pip install --upgrade pip
               "$PYBIN" -m pip install -r /work/requirements.txt
               "$PYBIN" -m pip install pyinstaller
