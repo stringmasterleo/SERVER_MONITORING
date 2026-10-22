@@ -46,15 +46,29 @@ jobs:
               ls -1 /opt/python || true
 
               PYBIN=""
-              for candidate in /opt/python/cp311-cp311/bin/python /opt/python/cp310-cp310/bin/python /opt/python/cp39-cp39/bin/python; do
+              for candidate in \
+                /opt/python/cp311-cp311/bin/python \
+                /opt/python/cp310-cp310/bin/python \
+                /opt/python/cp39-cp39/bin/python \
+                /usr/bin/python3 \
+                /usr/bin/python; do
                 if [ -x "$candidate" ]; then
-                  PYBIN="$candidate"
-                  break
+                  if "$candidate" -c "import sysconfig; import os; print(sysconfig.get_config_var('Py_ENABLE_SHARED') or 0)" | grep -qx "1"; then
+                    PYBIN="$candidate"
+                    break
+                  fi
                 fi
               done
 
               if [ -z "$PYBIN" ]; then
-                echo "No supported Python interpreter found in manylinux image"
+                echo "No Python interpreter with shared lib support found in build image"
+                for candidate in /opt/python/*/bin/python /usr/bin/python3 /usr/bin/python; do
+                  if [ -x "$candidate" ]; then
+                    echo "Candidate: $candidate"
+                    "$candidate" -V || true
+                    "$candidate" -c "import sysconfig; print('Py_ENABLE_SHARED=', sysconfig.get_config_var('Py_ENABLE_SHARED'))" || true
+                  fi
+                done
                 exit 1
               fi
 
