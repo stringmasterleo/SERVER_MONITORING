@@ -1,0 +1,11 @@
+[Unit]
+Description=Run standalone server monitoring report every hour
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+RandomizedDelaySec=120
+Unit=server-monitor-binary.service
+
+[Install]
+WantedBy=timers.target

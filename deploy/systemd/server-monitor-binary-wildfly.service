@@ -1,0 +1,24 @@
+[Unit]
+Description=Server Monitoring Reporter Binary (Starts with WildFly)
+After=network-online.target wildfly.service
+Wants=network-online.target
+Requires=wildfly.service
+PartOf=wildfly.service
+
+[Service]
+Type=simple
+User=monitor
+WorkingDirectory=/opt/server-monitoring
+ExecStart=/opt/server-monitoring/bin/server-monitoring --config /opt/server-monitoring/config.toml
+Restart=always
+RestartSec=10
+
+# Harden service
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/var/log/server-monitoring /opt/server-monitoring/reports
+
+[Install]
+WantedBy=wildfly.service

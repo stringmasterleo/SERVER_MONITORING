@@ -1,0 +1,21 @@
+[Unit]
+Description=Server Monitoring Reporter
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=monitor
+WorkingDirectory=/opt/server-monitoring
+Environment=PYTHONPATH=/opt/server-monitoring/src
+ExecStart=/opt/server-monitoring/.venv/bin/python -m server_monitoring --config /opt/server-monitoring/config.toml --once
+
+# Harden service
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/var/log/server-monitoring
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,39 @@
+[run]
+# true: run forever and send every interval_seconds
+# false: run once and exit
+loop = true
+interval_seconds = 3600
+top_process_limit = 5
+
+[report]
+path = "./reports/latest_report.txt"
+include_json_copy = true
+
+[thresholds]
+cpu_warn_threshold = 85
+mem_warn_threshold = 90
+disk_warn_threshold = 90
+
+[delivery.webhook]
+enabled = false
+url = ""
+
+[delivery.email]
+# Set to true to send report email
+enabled = false
+smtp_host = "smtp.gmail.com"
+smtp_port = 587
+smtp_user = "your-smtp-user"
+smtp_password = "your-app-password"
+from_email = "monitor@yourdomain.com"
+# Specific recipient email ID
+to_email = "your-email@example.com"
+use_starttls = true
+subject_prefix = "[ServerMonitor]"
+
+[http]
+# Enable browser view endpoint for report
+enabled = false
+host = "0.0.0.0"
+port = 9090
+path = "/serverReport"

@@ -1,0 +1,20 @@
+[Unit]
+Description=Server Monitoring Reporter (Standalone Binary)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=monitor
+WorkingDirectory=/opt/server-monitoring
+ExecStart=/opt/server-monitoring/bin/server-monitoring --config /opt/server-monitoring/config.toml --once
+
+# Harden service
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/var/log/server-monitoring /opt/server-monitoring/reports
+
+[Install]
+WantedBy=multi-user.target
