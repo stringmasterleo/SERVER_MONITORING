@@ -232,8 +232,13 @@ If your WildFly unit name is not `wildfly.service`, replace that name in the ser
 This repository includes workflow `Build Linux Binary`:
 
 - Workflow file: `.github/workflows/build-linux-binary.yml`
-- Runner: `ubuntu-22.04`
+- Runner: `ubuntu-22.04` with container `manylinux2014_x86_64`
 - Output artifact: `server-monitoring-linux-x86_64`
+
+Compatibility note:
+
+- The build runs inside `manylinux2014` (glibc 2.17 baseline), which is more compatible with older enterprise Linux hosts.
+- If a host still fails with glibc errors, run `ldd --version` on that host and rebuild against an even older compatible target.
 
 How to run:
 
