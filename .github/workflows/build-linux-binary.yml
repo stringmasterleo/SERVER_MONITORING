@@ -45,37 +45,29 @@ jobs:
               set -euxo pipefail
               ls -1 /opt/python || true
 
-              PYBIN=""
-              for candidate in \
-                /opt/python/cp311-cp311/bin/python \
-                /opt/python/cp310-cp310/bin/python \
-                /opt/python/cp39-cp39/bin/python \
-                /usr/bin/python3 \
-                /usr/bin/python; do
-                if [ -x "$candidate" ]; then
-                  if "$candidate" -c "import sysconfig; import os; print(sysconfig.get_config_var(\"Py_ENABLE_SHARED\") or 0)" | grep -qx "1"; then
-                    PYBIN="$candidate"
-                    break
-                  fi
-                fi
-              done
+              # Build a guaranteed shared CPython against manylinux2014 (glibc 2.17 baseline).
+              PYVER=3.11.9
+              PYHOME=/tmp/py311shared
+              PYBIN=$PYHOME/bin/python3.11
 
-              if [ -z "$PYBIN" ]; then
-                echo "No Python interpreter with shared lib support found in build image"
-                for candidate in /opt/python/*/bin/python /usr/bin/python3 /usr/bin/python; do
-                  if [ -x "$candidate" ]; then
-                    echo "Candidate: $candidate"
-                    "$candidate" -V || true
-                    "$candidate" -c "import sysconfig; print(\"Py_ENABLE_SHARED=\", sysconfig.get_config_var(\"Py_ENABLE_SHARED\"))" || true
-                  fi
-                done
-                exit 1
-              fi
+              yum -y install \
+                gcc make wget tar xz bzip2-devel libffi-devel openssl-devel zlib-devel \
+                readline-devel sqlite-devel gdbm-devel ncurses-devel
+
+              cd /tmp
+              wget -q https://www.python.org/ftp/python/${PYVER}/Python-${PYVER}.tgz
+              tar -xzf Python-${PYVER}.tgz
+              cd Python-${PYVER}
+              ./configure --prefix=$PYHOME --enable-shared --with-ensurepip=install \
+                LDFLAGS="-Wl,-rpath,$PYHOME/lib"
+              make -j2
+              make install
 
               "$PYBIN" -V
               "$PYBIN" -m pip install --upgrade pip
-              "$PYBIN" -m pip install -r requirements.txt
+              "$PYBIN" -m pip install -r /work/requirements.txt
               "$PYBIN" -m pip install pyinstaller
+              cd /work
               PYTHONPATH=src "$PYBIN" -m PyInstaller --onefile --name server-monitoring src/server_monitoring/__main__.py
             '
 
