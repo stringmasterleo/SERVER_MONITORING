@@ -29,22 +29,46 @@ jobs:
 
       - name: Install dependencies
         run: |
+          docker --version
           docker pull quay.io/pypa/manylinux2014_x86_64
 
       - name: Build standalone binary
         env:
           PYTHONPATH: src
         run: |
+          set -euxo pipefail
           docker run --rm \
             -v "${{ github.workspace }}:/work" \
             -w /work \
             quay.io/pypa/manylinux2014_x86_64 \
             /bin/bash -lc '
-              /opt/python/cp311-cp311/bin/python -m pip install --upgrade pip &&
-              /opt/python/cp311-cp311/bin/python -m pip install -r requirements.txt &&
-              /opt/python/cp311-cp311/bin/python -m pip install pyinstaller &&
-              PYTHONPATH=src /opt/python/cp311-cp311/bin/pyinstaller --onefile --name server-monitoring src/server_monitoring/__main__.py
+              set -euxo pipefail
+              ls -1 /opt/python || true
+
+              PYBIN=""
+              for candidate in /opt/python/cp311-cp311/bin/python /opt/python/cp310-cp310/bin/python /opt/python/cp39-cp39/bin/python; do
+                if [ -x "$candidate" ]; then
+                  PYBIN="$candidate"
+                  break
+                fi
+              done
+
+              if [ -z "$PYBIN" ]; then
+                echo "No supported Python interpreter found in manylinux image"
+                exit 1
+              fi
+
+              "$PYBIN" -V
+              "$PYBIN" -m pip install --upgrade pip
+              "$PYBIN" -m pip install -r requirements.txt
+              "$PYBIN" -m pip install pyinstaller
+              PYTHONPATH=src "$PYBIN" -m PyInstaller --onefile --name server-monitoring src/server_monitoring/__main__.py
             '
+
+      - name: Verify binary exists
+        run: |
+          ls -lah dist
+          test -f dist/server-monitoring
 
       - name: Assemble deployment bundle
         run: |
